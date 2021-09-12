@@ -33,7 +33,7 @@ And here's the output:
 Graphical objects are objects used to draw things on the screen. They can be either visible or not, depending on what you whish to do with them.
 They can either be empty graphical objects (which inherit `FegGUI.GraphicalObject`) or graphical containers  (which inherit `FegGUI.GraphicalContainer`, which again inherits `FegGUI.GraphicalObject`).
 
-Graphical objects fundamentally have a `pos` variable, which expresses their position on the terminal, starting from the top right (Yeah that's not really an hortodox approach to xy coordinates but I did it like this so yeah you can just accept what I did) and a `size` variable, which expresses how big the object is for the two axis.
+Graphical objects fundamentally have a `pos` variable, which expresses their position on the terminal, starting from the top left (Yeah that's not really an hortodox approach to xy coordinates but I did it like this so yeah you can just accept what I did) and a `size` variable, which expresses how big the object is for the two axis.
 
 The values just mentioned up here are automatically set by graphical containers when they are initialized. If a Graphical object is meant to occupy 100% of a container, then when the container initializes said object it sets the object's `size` value to its own size, and same can be said for the `pos` variable.
 In the example down here, the frame we see comes from the Rectangle which occupied 100% of the Row.
@@ -59,6 +59,10 @@ Output:
 ## Graphical containers
 These are objects which can contain other objects; 
 The current graphical containers are `FegGUI.Row`, which displays objects horizontally and `FegGUI.Column`, which displays objects vertically
+
+Here's a list of their properties:
+ - [GraphicalContainer.content](https://github.com/FegDotExe/FegGUI#graphicalcontainercontent)
+ - [GraphicalContainer.content](https://github.com/FegDotExe/FegGUI#graphicalcontainerpadding)
 ### GraphicalContainer.content
 The `content` variable is the most important in a graphical container: it's a list of all the graphical objects a container contains.
 
@@ -83,7 +87,7 @@ And here's the output:
 ┃        ┃┃        ┃
 ┗━━━━━━━━┛┗━━━━━━━━┛
 ```
-### Padding
+### GraphicalContainer.padding
 In order to specify how much space should be left around the contained objects, you can use the `padding` property, which starts from the left and goes clockwise.
 
 Here's an example:
