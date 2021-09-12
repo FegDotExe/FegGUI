@@ -82,6 +82,11 @@ class GraphicalDict():
                 outstring+="\n"
             i_y+=1
         return outstring
+
+class Percent():
+    """A class to represent size percentages"""
+    def __init__(self,number):
+        self.number = number
 graphical_dict=GraphicalDict()
 
 class Window():
