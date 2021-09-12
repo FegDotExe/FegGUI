@@ -62,7 +62,7 @@ The current graphical containers are `FegGUI.Row`, which displays objects horizo
 
 Here's a list of their properties:
  - [GraphicalContainer.content](https://github.com/FegDotExe/FegGUI#graphicalcontainercontent)
- - [GraphicalContainer.content](https://github.com/FegDotExe/FegGUI#graphicalcontainerpadding)
+ - [GraphicalContainer.padding](https://github.com/FegDotExe/FegGUI#graphicalcontainerpadding)
 ### GraphicalContainer.content
 The `content` variable is the most important in a graphical container: it's a list of all the graphical objects a container contains.
 
