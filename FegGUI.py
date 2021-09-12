@@ -66,6 +66,7 @@ class GraphicalDict():
                 i_x+=1
             i_y+=1
     def to_string(self,size):
+        """Transforms GraphicalDict.dict to a printable string"""
         outstring=""
         i_y=0
         while i_y<size[1]:
@@ -84,28 +85,28 @@ class GraphicalDict():
 graphical_dict=GraphicalDict()
 
 class Window():
-    def __init__(self,width=0,height=0,graphical_object=None):#FIXME: change Window's width and height to a size tuple
+    def __init__(self,size=(0,0),graphical_object=None):
         """Creates a new Window class. If no width or height values are given, they are set to the current terminal size, which is returned by os.get_terminal_size()"""
-        if width!=0:
-            self.width=width
+        if size[0]!=0:
+            width=size[0]
         else:
-            self.width=os.get_terminal_size()[0]-2
-        if height!=0:
-            self.height=height
+            width=os.get_terminal_size()[0]
+        if size[1]!=0:
+            height=size[1]
         else:
-            self.height=os.get_terminal_size()[1]-2
+            height=os.get_terminal_size()[1]
+        self.size=(width,height)
         self.graphical_object=graphical_object
-        graphical_object.pos=(0,0)
-        graphical_object.cursor=(0,0)
-        graphical_object.size=(self.width,self.height)
+    def update(self):
+        self.graphical_object.pos=(0,0)
+        self.graphical_object.cursor=(0,0)
+        self.graphical_object.size=self.size
         graphical_dict.reset()
-        graphical_object.initialize_content()
-    def reinit(self):
-        self.__init__(width=self.width,height=self.height,graphical_object=self.graphical_object)
-    def update(self):#FIXME: updating should do what reinit() does
+        self.graphical_object.initialize_content()
         outstring=""
-        outstring=graphical_dict.to_string((self.width,self.height))
-        print(outstring)
+        outstring=graphical_dict.to_string(self.size)
+        os.system('cls' if os.name=='nt' else 'clear')
+        print(outstring,end="")
     def get_input(self):
         pass#TODO: implement input logic
 
@@ -115,7 +116,7 @@ class GraphicalObject():
         self.pos=(-1,-1)
         self.cursor=(-1,-1)
         self.size=(-1,-1)
-        self.percentage=percentage
+        self.percentage=percentage#TODO: add a different way of measuring than percent
         self.framed=framed
         
     def __str__(self):
@@ -123,16 +124,18 @@ class GraphicalObject():
         return str(output_dict)
 
 class GraphicalContainer(GraphicalObject):
-    """A Graphical Object made to hold things in itself; being the one which holds other objects, this class is the one which holds the initialization methods"""
-    def __init__(self,percentage=100,content=[],orientation="",framed=0,fix_percent=1):
+    """A Graphical Object made to hold things in itself; being the one which holds other objects, this class is the one which initializes its content"""
+    def __init__(self,percentage=100,content=[],orientation="",framed=0,fix_percent=1,padding=(0,0,0,0)):
+        """Padding goes clockwise starting from the left"""
         GraphicalObject.__init__(self,percentage,framed=framed)
         self.content=content
         self.orientation=orientation
         self.fix_percent=fix_percent
+        self.padding=padding
     def initialize(self,target_object,value=0):
         """Initializes target_object, defining its mathematical values, such as pos and size"""
-        target_object.pos=(self.cursor[0],self.cursor[1])#Set the position to the drawing cursor
-        if self.orientation=="vertical":
+        target_object.pos=(self.cursor[0]+self.padding[0],self.cursor[1]+self.padding[1])#Set the position to the drawing cursor
+        if self.orientation=="vertical":#TODO: should add a one line way to do this
             target_object.size=(self.size[0],value)#Sets the size depending on the percentage
             self.cursor=(self.cursor[0],self.cursor[1]+target_object.size[1])#TODO: add an option to not add anything, in order to make compenetrating graphical objects
         elif self.orientation=="horizontal":
@@ -147,19 +150,20 @@ class GraphicalContainer(GraphicalObject):
     def initialize_content(self):
         """Initialize all of the GraphicalObject classes contained in the content variable given when creating the class"""
         self.cursor=self.pos #Sets the cursor back to the smallest coordinate for this object
+        self.cursor=(self.cursor[0]+self.padding[0],self.cursor[1]+self.padding[1])
+        self.size=(self.size[0]-(self.padding[0]+self.padding[2])*2,self.size[1]-(self.padding[1]+self.padding[3])*2)
         if self.orientation=="horizontal":
             ori=0
         elif self.orientation=="vertical":
             ori=1
-        sizes=self.get_ideal_percentage(self.size[ori],[element.percentage for element in self.content])
+        sizes=self.get_ideal_size(self.size[ori],[element.percentage for element in self.content])
         
         i=0
         for element in self.content:
             self.initialize(element,value=sizes[i])
             i+=1
-    def get_ideal_percentage(self,total_size,percentages):
-        """Input total size and get the raccomended length based on the given percentages"""
-        #TODO: put self.fix_percent to use
+    def get_ideal_size(self,total_size,percentages):
+        """Input total size of an object and get the raccomended length based on the given percentages"""
         output_size=[floor((total_size*percentage)/100) for percentage in percentages]
         i=0
         if len(output_size)>0:
@@ -172,11 +176,11 @@ class GraphicalContainer(GraphicalObject):
         return output_size
 
 class Column(GraphicalContainer):
-    def __init__(self,percentage=100,content=[],framed=0,fix_percent=1):
-        GraphicalContainer.__init__(self,percentage,content,orientation="vertical",framed=framed,fix_percent=fix_percent)
+    def __init__(self,percentage=100,content=[],framed=0,fix_percent=1,padding=(0,0,0,0)):
+        GraphicalContainer.__init__(self,percentage,content,orientation="vertical",framed=framed,fix_percent=fix_percent,padding=padding)
 class Row(GraphicalContainer):
-    def __init__(self,percentage=100,content=[],framed=0,fix_percent=1):
-        GraphicalContainer.__init__(self,percentage,content,orientation="horizontal",framed=framed,fix_percent=fix_percent)
+    def __init__(self,percentage=100,content=[],framed=0,fix_percent=1,padding=(0,0,0,0)):
+        GraphicalContainer.__init__(self,percentage,content,orientation="horizontal",framed=framed,fix_percent=fix_percent,padding=padding)
 class Rectangle(GraphicalObject):
     """A GraphicalObject which can't contain anything, but can be represented as a frame"""
     def __init__(self,percentage,framed=0):
