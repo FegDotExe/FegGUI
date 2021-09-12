@@ -7,7 +7,7 @@ In order to print the window, just use the `Window.update()` method
 
 Here's an example:
 ```Python
-this_window=FegGUI.Window(size=(20,10),graphical_object=FegGUI.Row(percentage=100,content=[
+this_window=FegGUI.Window(size=(20,10),graphical_object=FegGUI.Row(content=[
     FegGUI.Rectangle(percentage=100,framed=2)
 ]))
 this_window.update()
@@ -35,20 +35,48 @@ The `content` variable is the most important in a graphical container: it's a li
 
 Here's an example:
 ```Python
-this_window=FegGUI.Window(graphical_object=FegGUI.Row(percentage=100,content=[
+this_window=FegGUI.Window(size=(20,10),graphical_object=FegGUI.Row(content=[
     FegGUI.Rectangle(percentage=50,framed=2),
     FegGUI.Rectangle(percentage=50,framed=2)
 ]))
 this_window.update()
+```
+And here's the output:
+```
+┏━━━━━━━━┓┏━━━━━━━━┓
+┃        ┃┃        ┃
+┃        ┃┃        ┃
+┃        ┃┃        ┃
+┃        ┃┃        ┃
+┃        ┃┃        ┃
+┃        ┃┃        ┃
+┃        ┃┃        ┃
+┃        ┃┃        ┃
+┗━━━━━━━━┛┗━━━━━━━━┛
 ```
 ### Padding
 In order to specify how much space should be left around the contained objects, you can use the `padding` property, which starts from the left and goes clockwise.
 
 Here's an example:
 ```Python
-this_window=FegGUI.Window(graphical_object=FegGUI.Row(percentage=100,padding=(2,1,2,1),content=[
-    FegGUI.Rectangle(percentage=50,framed=2),
-    FegGUI.Rectangle(percentage=50,framed=2)
+this_window=FegGUI.Window(size=(20,10),graphical_object=FegGUI.Row(content=[
+    FegGUI.Row(percentage=100,padding=(2,1,2,1),framed=1,content=[
+        FegGUI.Rectangle(percentage=50,framed=2),
+        FegGUI.Rectangle(percentage=50,framed=2)
+    ])
 ]))
 this_window.update()
+```
+And here's the output:
+```
+┌──────────────────┐
+│                  │
+│   ┏━━━━┓┏━━━━┓   │
+│   ┃    ┃┃    ┃   │
+│   ┃    ┃┃    ┃   │
+│   ┃    ┃┃    ┃   │
+│   ┃    ┃┃    ┃   │
+│   ┗━━━━┛┗━━━━┛   │
+│                  │
+└──────────────────┘
 ```
