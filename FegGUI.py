@@ -8,6 +8,7 @@ class GraphicalDict():
     def __init__(self):
         self.dict={}
         self.init_list=[]
+        self.cache={}
     def reset(self):
         self.dict={}
     def clear(self,position,size):
@@ -23,6 +24,8 @@ class GraphicalDict():
             self.dict[str(coordinates[1])]={}
         self.dict[str(coordinates[1])][str(coordinates[0])]=character
     def remove_character(self,coordinates):
+        if str(coordinates[1]) in self.cache:
+            del self.cache[str(coordinates[1])]
         if str(coordinates[1]) in self.dict:
             if str(coordinates[0]) in self.dict[str(coordinates[1])]:
                 del self.dict[str(coordinates[1])][str(coordinates[0])]
@@ -84,16 +87,23 @@ class GraphicalDict():
         outstring=""
         i_y=0
         while i_y<size[1]:
-            if str(i_y) in self.dict:
-                i_x=0
-                while i_x<size[0]:
-                    if str(i_x) in self.dict[str(i_y)]:
-                        outstring+=self.dict[str(i_y)][str(i_x)]
-                    else:
-                        outstring+=" "
-                    i_x+=1
-            if i_y!=size[1]-1:
-                outstring+="\n"
+            if str(i_y) not in self.cache:
+                self.cache[str(i_y)]=""
+                if str(i_y) in self.dict:
+                    i_x=0
+                    while i_x<size[0]:
+                        if str(i_x) in self.dict[str(i_y)]:
+                            outstring+=self.dict[str(i_y)][str(i_x)]
+                            self.cache[str(i_y)]+=self.dict[str(i_y)][str(i_x)]
+                        else:
+                            outstring+=" "
+                            self.cache[str(i_y)]+=" "
+                        i_x+=1
+                if i_y!=size[1]-1:
+                    outstring+="\n"
+                    self.cache[str(i_y)]+="\n"
+            else:
+                outstring+=self.cache[str(i_y)]
             i_y+=1
         return outstring
 
@@ -216,7 +226,6 @@ class GraphicalContainer(GraphicalObject):
             self.size=(self.size[0]-(self.padding[0]+self.padding[2]),self.size[1]-(self.padding[1]+self.padding[3]))
         else:
             self.size=self.size
-        #FIXME: the line up here messes with the size on second initialization
         if self.orientation=="horizontal":
             ori=0
         elif self.orientation=="vertical":
