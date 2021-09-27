@@ -82,6 +82,18 @@ class GraphicalDict():
                     self.add_character(addendum,(position[0]+i_x,position[1]+i_y))
                 i_x+=1
             i_y+=1
+    def add_text(self,position,size,text,cursor=(0,0)):
+        #TODO: add ways to keep words together
+        i=0
+        i_y=cursor[1]
+        while i_y<size[1]:
+            i_x=cursor[0]#FIXME: decisamente provvisorio
+            while i_x<size[0]:
+                if i<len(text):
+                    self.add_character(text[i],(i_x+position[0],i_y+position[1]))
+                i+=1
+                i_x+=1
+            i_y+=1
     def to_string(self,size):
         """Transforms GraphicalDict.dict to a printable string"""
         outstring=""
@@ -161,7 +173,7 @@ class Window():
 
 class GraphicalObject():
     """A simple graphical object which has some parameters, such as a position (example: (0,0) ) and a size (example: (10,10) )"""
-    def __init__(self,size_value=Percent(100),framed=0):
+    def __init__(self,size_value=Percent(100),framed=0,clear=True):
         self._outer_object=None#This variable should be used to indicate which GraphicalContainer contains this object; when the variable is created but not initialized, this is set to None
         self.pos=(-1,-1)
         self.cursor=(-1,-1)
@@ -170,13 +182,14 @@ class GraphicalObject():
         self.size_value=size_value
         self.framed=framed
         self.init_times=0#How many times this object has been initialized
+        self.clear=clear
     
     def graphical_initialization(self):
         """Inserts the correct data in the graphical dictionaries"""
-        graphical_dict.clear(self.pos,self.size)
+        if self.clear:
+            graphical_dict.clear(self.pos,self.size)
         if self.framed!=0:
             graphical_dict.add_frame(self.framed,self.pos,self.size)
-        pass
 
     @property
     def size_value(self):
@@ -283,3 +296,29 @@ class Rectangle(GraphicalObject):
     """A GraphicalObject which can't contain anything, but can be represented as a frame"""
     def __init__(self,size_value=Percent(100),framed=0):
         GraphicalObject.__init__(self,size_value,framed=framed)
+
+class Text(GraphicalObject):
+    """A GraphicalObject which contains text"""
+    def __init__(self,size_value=Percent(100),framed=0,clear=False,text="Text",keep_words_whole=False):
+        GraphicalObject.__init__(self,size_value,framed=framed,clear=clear)#TODO: add clear to other inits
+        self.text=text
+        self.keep_words_whole=keep_words_whole
+    def graphical_initialization(self):
+        GraphicalObject.graphical_initialization(self)
+        if self.keep_words_whole:
+            list_of_words=self.text.split(' ')
+            cursor_x=0
+            cursor_y=0
+            first=True
+            for word in list_of_words:
+                if len(word)>self.size[0]-cursor_x and not first:
+                    cursor_x=0
+                    cursor_y+=1
+                graphical_dict.add_text(self.pos,self.size,word+" ",(cursor_x,cursor_y))
+                if len(word)>self.size[0]:
+                    cursor_y+=1
+                cursor_x+=len(word)+1
+                first=False
+        else:
+            graphical_dict.add_text(self.pos,self.size,self.text)
+        #graphical_dict.add_text(self.pos,self.size,self.text)

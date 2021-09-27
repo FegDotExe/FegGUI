@@ -4,6 +4,7 @@ It's just a stupid GUI lib I made for python after being tired of not understand
 Mind that the documentation here is reaaaaaally incomplete, even though I'm working on completing it
 
 ## How it works
+### Simple explanation
 You just create a Window class and give it a graphical object of your choice. The window will handle the initialization of the given object, setting its values depending on the specified properties.
 For more info about graphical objects, look at the section I wrote about them down here!
 In order to print the window, just use the `Window.update()` method.
@@ -28,6 +29,12 @@ And here's the output:
 ┃                  ┃
 ┗━━━━━━━━━━━━━━━━━━┛
 ```
+### More complex and useful explanation
+When you specify a `graphical_object` for a `FegGUI.Window` class, a class of the same type is create, whose only content is a deepcopy of the `graphical_object`.
+
+This is done because `FegGUI.GraphicalObject` classes need to be initialized by the `FegGUI.GraphicalContainer` which contains them, giving them the fundamental properties such as size and position.
+
+This is how initialization works (the mentioned object is the inner object): Variables are set → The object is initialized graphically through the function `FegGUI.GraphicalObject.graphical_initialization` → If the object is a GraphicalContainer, it initializes its content through the function `FegGUI.GraphicalContainer.initialize_content`
 
 # Graphical objects
 Graphical objects are objects used to draw things on the screen. They can be either visible or not, depending on what you whish to do with them.
