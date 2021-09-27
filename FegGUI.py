@@ -1,6 +1,7 @@
 import os
 from math import floor
 import datetime
+from textwrap import wrap
 
 
 class GraphicalDict():
@@ -125,6 +126,8 @@ class Percent():
         self.percent = percent
     def get_percent(self,number):
         return (self.percent*number)/100
+    def __str__(self):
+        return str(self.percent)+"%"
 graphical_dict=GraphicalDict()
 
 class Window():
@@ -207,30 +210,39 @@ class GraphicalObject():
 
 class GraphicalContainer(GraphicalObject):
     """A Graphical Object made to hold things in itself; being the one which holds other objects, this class is the one which initializes its content"""
-    def __init__(self,size_value=Percent(100),content=[],orientation="",framed=0,fix_percent=1,padding=(0,0,0,0)):
+    def __init__(self,size_value=Percent(100),content=[],orientation="",framed=0,fix_percent=1,padding=(0,0,0,0),clear=True):
         """Padding goes clockwise starting from the left"""
         GraphicalObject.__init__(self,size_value,framed=framed)
+        self.clear=clear
         self.content=content
         self.orientation=orientation
         self.fix_percent=fix_percent
         self.padding=padding
 
-    def initialize(self,target_object,value=0):
-        """Initializes target_object, defining its mathematical values, such as pos and size"""
+    def initialize(self,target_object,value=0,only_maths=False):
+        """Initializes target_object, defining its mathematical values, such as pos and size. If only_maths is set to Ture, only values will be calculated"""
         target_object.pos=(self.cursor[0],self.cursor[1])#Set the position to the drawing cursor
         if self.orientation=="vertical":#TODO: should add a one line way to do this
             target_object.size=(self.size[0],value)#Sets the size depending on the percentage
-            self.cursor=(self.cursor[0],self.cursor[1]+target_object.size[1])
+            if not only_maths:
+                self.cursor=(self.cursor[0],self.cursor[1]+target_object.size[1])
         elif self.orientation=="horizontal":
             target_object.size=(value,self.size[1])#Sets the size depending on the percentage
-            self.cursor=(self.cursor[0]+target_object.size[0],self.cursor[1])
+            if not only_maths:
+                self.cursor=(self.cursor[0]+target_object.size[0],self.cursor[1])
         
         target_object._outer_object=self
 
-        target_object.graphical_initialization()
+        if not only_maths:
+            target_object.graphical_initialization()
         
-        if str(type(target_object).__bases__[0])=="<class 'FegGUI.FegGUI.GraphicalContainer'>":
-            target_object.initialize_content()
+            if str(type(target_object).__bases__[0])=="<class 'FegGUI.FegGUI.GraphicalContainer'>":
+                target_object.pre_initialize_content()
+                target_object.initialize_content()
+
+    def pre_initialize_content(self):
+        """An empty function made in case any child class needs to do things before initializing its content"""
+        pass
     def initialize_content(self):
         """Initialize all of the GraphicalObject classes contained in the content variable given when creating the class. It should always be kept in mind that the elements are initialized starting from the values of the container in which they are"""
         self.cursor=self.pos #Sets the cursor back to the smallest coordinate for this object
@@ -243,6 +255,12 @@ class GraphicalContainer(GraphicalObject):
             ori=0
         elif self.orientation=="vertical":
             ori=1
+
+        for element in self.content:
+            if str(type(element))=="<class 'FegGUI.FegGUI.TextBox'>":
+                self.initialize(element,value=self.size[ori],only_maths=True)
+                """print(self.size)
+                element.size=(self.size[0],element.size[1])"""
 
         sizes=self.get_ideal_size(self.size[ori],[element.size_value for element in self.content])
         self.init_times+=1
@@ -271,12 +289,13 @@ class GraphicalContainer(GraphicalObject):
                     output_size[i]=floor(output_size[i].get_percent(total_size))
                     percent_list.append(output_size[i])
                 i+=1
-            if ((total_size-sum(percent_list))*100)/total_size<=self.fix_percent:
-                while sum(percent_list)<total_size:
-                    if i>=len(output_size):
-                        i=0
-                    percent_list[i]+=1
-                    i+=1
+            if total_size>0:
+                if ((total_size-sum(percent_list))*100)/total_size<=self.fix_percent:
+                    while sum(percent_list)<total_size:
+                        if i>=len(output_size):
+                            i=0
+                        percent_list[i]+=1
+                        i+=1
             i=0
             ii=0
             for element in is_percent_list:
@@ -287,7 +306,7 @@ class GraphicalContainer(GraphicalObject):
         return output_size
 
 class Column(GraphicalContainer):
-    def __init__(self,size_value=100,content=[],framed=0,fix_percent=1,padding=(0,0,0,0)):
+    def __init__(self,size_value=Percent(100),content=[],framed=0,fix_percent=1,padding=(0,0,0,0)):
         GraphicalContainer.__init__(self,size_value,content,orientation="vertical",framed=framed,fix_percent=fix_percent,padding=padding)
 class Row(GraphicalContainer):
     def __init__(self,size_value=Percent(100),content=[],framed=0,fix_percent=1,padding=(0,0,0,0)):
@@ -297,28 +316,42 @@ class Rectangle(GraphicalObject):
     def __init__(self,size_value=Percent(100),framed=0):
         GraphicalObject.__init__(self,size_value,framed=framed)
 
-class Text(GraphicalObject):
+class TextBox(GraphicalContainer):
     """A GraphicalObject which contains text"""
-    def __init__(self,size_value=Percent(100),framed=0,clear=False,text="Text",keep_words_whole=False):
-        GraphicalObject.__init__(self,size_value,framed=framed,clear=clear)#TODO: add clear to other inits
+    def __init__(self,size_value=Percent(100),framed=0,clear=False,text="Text",wrap=False):
+        GraphicalContainer.__init__(self,size_value,framed=framed,clear=clear,orientation="vertical")#TODO: add clear to other inits
         self.text=text
-        self.keep_words_whole=keep_words_whole
-    def graphical_initialization(self):
-        GraphicalObject.graphical_initialization(self)
-        if self.keep_words_whole:
-            list_of_words=self.text.split(' ')
-            cursor_x=0
-            cursor_y=0
-            first=True
-            for word in list_of_words:
-                if len(word)>self.size[0]-cursor_x and not first:
-                    cursor_x=0
-                    cursor_y+=1
-                graphical_dict.add_text(self.pos,self.size,word+" ",(cursor_x,cursor_y))
-                if len(word)>self.size[0]:
-                    cursor_y+=1
-                cursor_x+=len(word)+1
-                first=False
+        self.wrap=wrap
+
+    @property
+    def size_value(self):
+        if self._outer_object.orientation=="vertical":
+            self._size_value=len(self.text_to_lines())#TODO: should add a limit if percentage or normal size was previously set
         else:
-            graphical_dict.add_text(self.pos,self.size,self.text)
-        #graphical_dict.add_text(self.pos,self.size,self.text)
+            pass
+        return self._size_value
+    @size_value.setter
+    def size_value(self,value):
+        self._size_value=value
+
+    def pre_initialize_content(self):
+        lines=self.text_to_lines()
+        self.content=[]
+        for line in lines:
+            self.content.append(Text(clear=self.clear,text=line))
+    
+    def text_to_lines(self):
+        if self.wrap:
+            lines=wrap(self.text,self.size[0])
+        else:
+            lines=[self.text[i:i+self.size[0]] for i in range(0,len(self.text),self.size[0])]
+        return lines
+    
+
+class Text(GraphicalObject):
+    """The text contained in a TextBox"""
+    def __init__(self,size_value=1,clear=True,text="Text"):
+        GraphicalObject.__init__(self,size_value,clear=clear)
+        self.text=text
+    def graphical_initialization(self):
+        graphical_dict.add_text(self.pos,self.size,self.text)

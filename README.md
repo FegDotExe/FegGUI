@@ -34,7 +34,9 @@ When you specify a `graphical_object` for a `FegGUI.Window` class, a class of th
 
 This is done because `FegGUI.GraphicalObject` classes need to be initialized by the `FegGUI.GraphicalContainer` which contains them, giving them the fundamental properties such as size and position.
 
-This is how initialization works (the mentioned object is the inner object): Variables are set → The object is initialized graphically through the function `FegGUI.GraphicalObject.graphical_initialization` → If the object is a GraphicalContainer, it initializes its content through the function `FegGUI.GraphicalContainer.initialize_content`
+This is how initialization works (the mentioned object is the inner object): Variables are set → The object is initialized graphically through the function `FegGUI.GraphicalObject.graphical_initialization` → If the object is a GraphicalContainer, it initializes its content through the function `FegGUI.GraphicalContainer.initialize_content`.
+
+By default, only the `graphical_object` in `FegGUI.Window` is initialized, being the only object in `FegGUI.GraphicalDict.init_list`; after each `FegGUI.Window.update`, `FegGUI.GraphicalDict.init_list` is emptied, and will need to be refilled with the objects which need to be re-initialized.
 
 # Graphical objects
 Graphical objects are objects used to draw things on the screen. They can be either visible or not, depending on what you whish to do with them.
