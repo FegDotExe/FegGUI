@@ -3,6 +3,9 @@ from math import floor
 import datetime
 from textwrap import wrap
 
+class SizeValueError(Exception):
+    def __init__(self,container):
+        super().__init__("The container "+str(container)+" had contents which exceeded its size.")
 
 class GraphicalDict():
     """A dictionary which stores all the characters to be printed by Window.update()"""
@@ -12,26 +15,28 @@ class GraphicalDict():
         self.cache={}
     def reset(self):
         self.dict={}
-    def clear(self,position,size):
+    def clear(self,position,size,outer_size):
         i_y=0
         while i_y<size[1]:
             i_x=0
             while i_x<size[0]:
-                self.remove_character((i_x+position[0], i_y+position[1]))
+                self.remove_character((i_x+position[0], i_y+position[1]),outer_size)
                 i_x+=1
             i_y+=1
-    def add_character(self,character,coordinates):
-        if not str(coordinates[1]) in self.dict:
-            self.dict[str(coordinates[1])]={}
-        self.dict[str(coordinates[1])][str(coordinates[0])]=character
-    def remove_character(self,coordinates):
-        if str(coordinates[1]) in self.cache:
-            del self.cache[str(coordinates[1])]
-        if str(coordinates[1]) in self.dict:
-            if str(coordinates[0]) in self.dict[str(coordinates[1])]:
-                del self.dict[str(coordinates[1])][str(coordinates[0])]
-    def add_frame(self,frame_type,position,size):
-        """Adds a frame of given size at given coordinates"""
+    def add_character(self,character,coordinates,outer_size):
+        if coordinates[0]<=outer_size[0] and coordinates[1]<=outer_size[1]:
+            if not str(coordinates[1]) in self.dict:
+                self.dict[str(coordinates[1])]={}
+            self.dict[str(coordinates[1])][str(coordinates[0])]=character
+    def remove_character(self,coordinates,outer_size):
+        if coordinates[0]<=outer_size[0] and coordinates[1]<=outer_size[1]:
+            if str(coordinates[1]) in self.cache:
+                del self.cache[str(coordinates[1])]
+            if str(coordinates[1]) in self.dict:
+                if str(coordinates[0]) in self.dict[str(coordinates[1])]:
+                    del self.dict[str(coordinates[1])][str(coordinates[0])]
+    def add_frame(self,frame_type,position,size,outer_size):
+        """Adds a frame of given size at given coordinates; outer_size is the size value of the outer object"""
         #Pretty useful for this: https://en.wikipedia.org/wiki/Box-drawing_character
         i_y=0
         while i_y<size[1]:
@@ -80,18 +85,17 @@ class GraphicalDict():
                     elif frame_type==2:
                         addendum="┛"
                 if addendum!=" ":
-                    self.add_character(addendum,(position[0]+i_x,position[1]+i_y))
+                    self.add_character(addendum,(position[0]+i_x,position[1]+i_y),outer_size)
                 i_x+=1
             i_y+=1
-    def add_text(self,position,size,text,cursor=(0,0)):
-        #TODO: add ways to keep words together
+    def add_text(self,position,size,text,outer_size,cursor=(0,0)):#FIXME: fix problem with relative texts and percentages
         i=0
         i_y=cursor[1]
         while i_y<size[1]:
-            i_x=cursor[0]#FIXME: decisamente provvisorio
+            i_x=cursor[0]
             while i_x<size[0]:
                 if i<len(text):
-                    self.add_character(text[i],(i_x+position[0],i_y+position[1]))
+                    self.add_character(text[i],(i_x+position[0],i_y+position[1]),outer_size)
                 i+=1
                 i_x+=1
             i_y+=1
@@ -126,6 +130,8 @@ class Percent():
         self.percent = percent
     def get_percent(self,number):
         return (self.percent*number)/100
+    def __repr__(self):
+        return self.__str__()
     def __str__(self):
         return str(self.percent)+"%"
 graphical_dict=GraphicalDict()
@@ -190,9 +196,9 @@ class GraphicalObject():
     def graphical_initialization(self):
         """Inserts the correct data in the graphical dictionaries"""
         if self.clear:
-            graphical_dict.clear(self.pos,self.size)
+            graphical_dict.clear(self.pos,self.size,self._outer_object.size)
         if self.framed!=0:
-            graphical_dict.add_frame(self.framed,self.pos,self.size)
+            graphical_dict.add_frame(self.framed,self.pos,self.size,self._outer_object.size)
 
     @property
     def size_value(self):
@@ -204,8 +210,12 @@ class GraphicalObject():
                 graphical_dict.init_list.append(self._outer_object)#Appends the outer class to the init class so that it is reinitialized when modified
         self._size_value=value
         
+    def __repr__(self):
+        return self.__str__()
     def __str__(self):
-        output_dict={"pos":self.pos,"size":self.size,"type":str(type(self))}
+        output_dict={"pos":self.pos,"size":self.size,"size_value":self.size_value,"type":str(type(self))}
+        if str(type(self).__bases__[0])=="<class 'FegGUI.FegGUI.GraphicalContainer'>":
+            output_dict["content"]=self.content
         return str(output_dict)
 
 class GraphicalContainer(GraphicalObject):
@@ -303,6 +313,8 @@ class GraphicalContainer(GraphicalObject):
                     output_size[i]=percent_list[ii]
                     ii+=1
                 i+=1
+        """if sum(output_size)>total_size:
+            raise SizeValueError(self)#TODO: there is a better way. Should add limits to objects"""
         return output_size
 
 class Column(GraphicalContainer):
@@ -318,18 +330,20 @@ class Rectangle(GraphicalObject):
 
 class TextBox(GraphicalContainer):
     """A GraphicalObject which contains text"""
-    def __init__(self,size_value=Percent(100),framed=0,clear=False,text="Text",wrap=False):
+    def __init__(self,size_value=Percent(100),framed=0,clear=False,text="Text",wrap=True):
+        """If the size_value is set to 'rel' and the orientation of the outer object is vertical, the size_value will return a value equal to the total lenght of the lines of this object"""
         GraphicalContainer.__init__(self,size_value,framed=framed,clear=clear,orientation="vertical")#TODO: add clear to other inits
         self.text=text
         self.wrap=wrap
 
     @property
     def size_value(self):
-        if self._outer_object.orientation=="vertical":
-            self._size_value=len(self.text_to_lines())#TODO: should add a limit if percentage or normal size was previously set
+        output_value=self._size_value
+        if self._outer_object.orientation=="vertical" and output_value=="rel":
+            output_value=len(self.text_to_lines())#TODO: should add a limit if percentage or normal size was previously set
         else:
             pass
-        return self._size_value
+        return output_value
     @size_value.setter
     def size_value(self,value):
         self._size_value=value
@@ -347,11 +361,10 @@ class TextBox(GraphicalContainer):
             lines=[self.text[i:i+self.size[0]] for i in range(0,len(self.text),self.size[0])]
         return lines
     
-
 class Text(GraphicalObject):
     """The text contained in a TextBox"""
     def __init__(self,size_value=1,clear=True,text="Text"):
         GraphicalObject.__init__(self,size_value,clear=clear)
         self.text=text
     def graphical_initialization(self):
-        graphical_dict.add_text(self.pos,self.size,self.text)
+        graphical_dict.add_text(self.pos,self.size,self.text,self._outer_object.size)
